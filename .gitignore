@@ -1,0 +1,5 @@
+# app compilado (exe de 229 MB passa do limite de 100 MB do GitHub; regenera com o asar pack)
+mathsidian-app/
+
+# evidências do REA (213 MB)
+rea-evidencias.json

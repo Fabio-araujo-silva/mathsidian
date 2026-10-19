@@ -1,0 +1,15 @@
+{
+	"name": "mathsidian",
+	"productName": "Mathsidian",
+	"description": "Mathsidian",
+	"version": "1.14.4",
+	"license": "UNLICENSED",
+	"author": "local",
+	"private": true,
+	"main": "main.js",
+	"dependencies": {
+		"@electron/remote": "2.1.3",
+		"btime": "../btime",
+		"get-fonts": "../get-fonts"
+	}
+}

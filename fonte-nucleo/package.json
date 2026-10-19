@@ -1,0 +1,13 @@
+{
+	"name": "mathsidian-nucleo",
+	"description": "Mathsidian",
+	"version": "1.14.4",
+	"license": "UNLICENSED",
+	"author": "local",
+	"private": true,
+	"main": "index.js",
+	"dependencies": {
+		"btime": "../electron/btime",
+		"get-fonts": "../electron/get-fonts"
+	}
+}

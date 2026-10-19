@@ -1,0 +1,55 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{tikz-cd}
+\usetikzlibrary{babel}
+
+\newtheorem{teorema}{Teorema}
+\newtheorem{definicao}{Definição}
+\newcommand{\im}{\operatorname{im}}
+\newcommand{\Z}{\mathbb{Z}}
+
+\begin{document}
+
+\section{Diagramas comutativos}
+
+\begin{definicao}
+Um quadrado de homomorfismos
+\[
+\begin{tikzcd}
+A \arrow[r, "f"] \arrow[d, "\alpha"'] & B \arrow[d, "\beta"] \\
+C \arrow[r, "g"'] & D
+\end{tikzcd}
+\]
+\emph{comuta} quando $\beta\circ f = g\circ\alpha$.
+\end{definicao}
+
+\begin{teorema}[Primeiro teorema do isomorfismo]
+Seja $\varphi\colon G\to H$ um homomorfismo de grupos e $\pi\colon G\to G/\ker\varphi$ a projeção. Existe um único isomorfismo $\bar\varphi$ tal que o diagrama
+\[
+\begin{tikzcd}
+G \arrow[r, "\varphi"] \arrow[d, "\pi"'] & \im\varphi \\
+G/\ker\varphi \arrow[ur, "\bar\varphi"', "\cong"]
+\end{tikzcd}
+\]
+comuta.
+\end{teorema}
+
+\begin{proof}
+Defina $\bar\varphi(g\ker\varphi)=\varphi(g)$. Está bem definido, pois $g\ker\varphi=h\ker\varphi$ implica $h^{-1}g\in\ker\varphi$, logo $\varphi(g)=\varphi(h)$. É sobrejetor sobre $\im\varphi$ por construção e injetor porque $\varphi(g)=e$ implica $g\in\ker\varphi$.
+\end{proof}
+
+\section{Sequências exatas}
+
+Um exemplo clássico com duas linhas:
+\[
+\begin{tikzcd}
+0 \arrow[r] & \Z \arrow[r, "\cdot 2"] \arrow[d, "\cdot 3"'] & \Z \arrow[r] \arrow[d, "\cdot 3"] & \Z/2\Z \arrow[r] \arrow[d, "\cdot 3"] & 0 \\
+0 \arrow[r] & \Z \arrow[r, "\cdot 2"'] & \Z \arrow[r] & \Z/2\Z \arrow[r] & 0
+\end{tikzcd}
+\]
+Cada quadrado comuta, porque multiplicações por inteiros comutam.
+
+\end{document}

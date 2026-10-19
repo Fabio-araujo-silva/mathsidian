@@ -1,0 +1,145 @@
+/* Mathsidian: matemática */
+
+/* fórmulas compiladas pelo TeX (SVG com currentColor: seguem a cor do tema) */
+.mathsidian-math svg {
+  display: inline-block;
+  overflow: visible;
+}
+div.mathsidian-math {
+  display: block;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.3em 0;
+}
+/* fórmula/diagrama largo encolhe pra caber, mantendo a proporção */
+div.mathsidian-math > svg,
+.mathsidian-tex > svg {
+  max-width: 100%;
+  height: auto !important;
+}
+/* prévia KaTeX enquanto o TeX compila */
+.mathsidian-math.is-pending {
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.mathsidian-math .katex {
+  font-size: 1.1em;
+}
+.mathsidian-math .katex-display {
+  margin: 0;
+}
+.mathsidian-math-error {
+  color: var(--text-error);
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  text-decoration: underline dashed var(--text-error);
+  opacity: 1;
+}
+
+/* blocos ```latex / ```tikz */
+.mathsidian-tex {
+  display: flex;
+  justify-content: center;
+  padding: 0.5em 0;
+  overflow-x: auto;
+}
+.mathsidian-tex.is-pending {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+}
+.mathsidian-tex-error pre {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.mathsidian-toast {
+  position: fixed;
+  bottom: 2.5em;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--background-modifier-message);
+  color: var(--text-on-accent, #fff);
+  padding: 0.4em 1em;
+  border-radius: var(--radius-m);
+  font-size: var(--font-ui-small);
+  z-index: var(--layer-notice);
+  pointer-events: none;
+}
+
+/* callouts de teoria: > [!theorem] Título */
+.callout[data-callout="definition"],
+.callout[data-callout="definicao"] {
+  --callout-color: 68, 138, 255;
+  --callout-icon: lucide-book-open;
+}
+.callout[data-callout="theorem"],
+.callout[data-callout="teorema"],
+.callout[data-callout="proposition"],
+.callout[data-callout="proposicao"] {
+  --callout-color: 168, 130, 255;
+  --callout-icon: lucide-sigma;
+}
+.callout[data-callout="lemma"],
+.callout[data-callout="lema"],
+.callout[data-callout="corollary"],
+.callout[data-callout="corolario"] {
+  --callout-color: 120, 110, 220;
+  --callout-icon: lucide-sigma-square;
+}
+.callout[data-callout="example"],
+.callout[data-callout="exemplo"] {
+  --callout-color: 0, 191, 165;
+  --callout-icon: lucide-flask-conical;
+}
+.callout[data-callout="remark"],
+.callout[data-callout="observacao"] {
+  --callout-color: 158, 158, 158;
+  --callout-icon: lucide-message-circle;
+}
+.callout[data-callout="proof"],
+.callout[data-callout="prova"],
+.callout[data-callout="demonstracao"] {
+  --callout-color: 158, 158, 158;
+  --callout-icon: lucide-pen-line;
+  background: transparent;
+  border-left: 2px solid rgba(var(--callout-color), 0.6);
+  border-radius: 0;
+}
+.callout[data-callout="proof"] > .callout-content::after,
+.callout[data-callout="prova"] > .callout-content::after,
+.callout[data-callout="demonstracao"] > .callout-content::after {
+  content: "∎";
+  display: block;
+  text-align: right;
+  color: var(--text-muted);
+}
+.callout:is(
+    [data-callout="theorem"],
+    [data-callout="teorema"],
+    [data-callout="proposition"],
+    [data-callout="proposicao"],
+    [data-callout="lemma"],
+    [data-callout="lema"],
+    [data-callout="corollary"],
+    [data-callout="corolario"]
+  )
+  > .callout-content {
+  font-style: italic;
+}
+.callout:is(
+    [data-callout="theorem"],
+    [data-callout="teorema"],
+    [data-callout="proposition"],
+    [data-callout="proposicao"],
+    [data-callout="lemma"],
+    [data-callout="lema"],
+    [data-callout="corollary"],
+    [data-callout="corolario"]
+  )
+  > .callout-content
+  .math {
+  font-style: normal;
+}
