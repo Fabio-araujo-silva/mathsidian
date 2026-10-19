@@ -1,40 +1,282 @@
-# Mathsidian: código extraído e legível (estudo pessoal)
+# Mathsidian
 
-## Pastas
-- `fonte-original/`: conteúdo bruto extraído (intocado)
-- `fonte-nucleo/`: núcleo do app formatado com Prettier, com nomes/títulos trocados para "Mathsidian"
-- `fonte-carregador/`: carregador Electron (nome `mathsidian`, atualização automática desligada, carrega `nucleo.asar`)
-- `mathsidian-app/`: app rodável (`mathsidian.exe`)
-- `rea-evidencias.json`: evidências do REA
+Um aplicativo de anotações para matemática, baseado no Obsidian. Você escreve suas notas normalmente e as fórmulas aparecem bonitas, do mesmo jeito que num PDF feito em LaTeX. Ele também desenha diagramas comutativos e gráficos (TikZ) e destaca teoremas, definições e demonstrações com cores.
 
-## Rodar
-    D:\Users\fabio\Desktop\mathsidian\mathsidian-app\mathsidian.exe
+> **Aviso:** este projeto é feito a partir do código do Obsidian, que é proprietário. É só para estudo pessoal: não redistribua.
 
-Dados/configuração ficam em `%APPDATA%\Mathsidian` (separado do app original; não mexe nos seus cofres).
+---
 
-## Editar e reempacotar
+## Sumário
+
+1. [Antes de começar](#1-antes-de-começar)
+2. [Instalar o MiKTeX (o "motor" das fórmulas)](#2-instalar-o-miktex-o-motor-das-fórmulas)
+3. [Instalar e abrir o Mathsidian](#3-instalar-e-abrir-o-mathsidian)
+4. [Criar seu cofre (a pasta das notas)](#4-criar-seu-cofre-a-pasta-das-notas)
+5. [Escrever notas e fórmulas](#5-escrever-notas-e-fórmulas)
+6. [Teoremas, definições e demonstrações](#6-teoremas-definições-e-demonstrações)
+7. [Diagramas e gráficos](#7-diagramas-e-gráficos)
+8. [Seus próprios comandos (preamble.tex)](#8-seus-próprios-comandos-preambletex)
+9. [Trazer um arquivo LaTeX (.tex) para o Mathsidian](#9-trazer-um-arquivo-latex-tex-para-o-mathsidian)
+10. [Deu problema?](#10-deu-problema)
+11. [Para desenvolvedores](#11-para-desenvolvedores)
+
+---
+
+## 1. Antes de começar
+
+Você vai precisar de:
+
+- Um computador com **Windows 10 ou 11**.
+- Cerca de **2 GB livres** no disco: uns 400 MB para o app e o resto para o MiKTeX.
+- **Internet**, só na instalação e nas primeiras vezes que usar fórmulas.
+- A pasta **`mathsidian-app`**, que é o programa pronto. Ela é grande demais para ficar no GitHub, então peça o arquivo `mathsidian-app.zip` a quem te passou este projeto.
+
+## 2. Instalar o MiKTeX (o "motor" das fórmulas)
+
+O Mathsidian usa o LaTeX instalado no seu computador para desenhar as fórmulas. O LaTeX mais fácil de instalar no Windows é o **MiKTeX**.
+
+1. Entre em **https://miktex.org/download** e clique em **Download** na aba **Windows**.
+2. Abra o arquivo baixado (algo como `basic-miktex-...-x64.exe`).
+3. Aceite a licença e clique em **Avançar**. Pode deixar as opções como estão até chegar na tela **"Settings"**.
+4. Nessa tela, no campo **"Install missing packages on-the-fly"**, escolha **"Yes"**. ⚠️ Esse passo é o mais importante: ele deixa o MiKTeX baixar sozinho o que faltar, sem ficar perguntando.
+5. Termine a instalação.
+6. **Reinicie o computador.** Sem isso, o Mathsidian pode não encontrar o MiKTeX.
+
+**Para conferir se deu certo:** aperte a tecla **Windows**, digite `cmd` e aperte **Enter**. Na janela preta que abrir, digite o comando abaixo e aperte **Enter**:
+
+    latex --version
+
+Se aparecer um texto começando com `MiKTeX-pdfTeX`, deu certo. Se aparecer *"não é reconhecido como um comando"*, veja a seção [Deu problema?](#10-deu-problema).
+
+## 3. Instalar e abrir o Mathsidian
+
+1. Pegue o arquivo `mathsidian-app.zip`, clique nele com o **botão direito** e escolha **"Extrair tudo..."**.
+2. Escolha um lugar fixo para a pasta, por exemplo **Documentos**. Não deixe na pasta **Downloads**, porque é fácil apagar sem querer.
+3. Abra a pasta `mathsidian-app` e dê dois cliques em **`mathsidian.exe`**.
+4. Se aparecer uma tela azul dizendo **"O Windows protegeu o computador"**, clique em **"Mais informações"** e depois em **"Executar assim mesmo"**. Isso acontece porque o app não tem assinatura digital de empresa.
+
+**Para criar um atalho na Área de Trabalho:**
+
+1. Clique com o botão direito em `mathsidian.exe`.
+2. Escolha **"Mostrar mais opções"** (só no Windows 11) e depois **"Enviar para" → "Área de trabalho (criar atalho)"**.
+
+> O Mathsidian guarda as configurações dele numa pasta separada. Se você também usa o Obsidian normal, nada do Obsidian é alterado.
+
+## 4. Criar seu cofre (a pasta das notas)
+
+No Mathsidian, um **cofre** é só uma pasta do seu computador onde ficam as notas. Cada nota é um arquivo de texto `.md`, então você nunca perde nada: dá para abrir as notas até no Bloco de Notas.
+
+1. Na primeira tela, clique em **"Criar"**, ao lado de **"Criar novo cofre"**.
+2. Dê um nome, por exemplo `Matemática`.
+3. Em **"Localização"**, clique em **"Procurar"** e escolha onde a pasta vai ficar, por exemplo **Documentos**.
+4. Clique em **"Criar"**.
+
+Se você já tem um cofre do Obsidian, use **"Abrir pasta como cofre"** e escolha a pasta dele.
+
+## 5. Escrever notas e fórmulas
+
+- **Nova nota:** `Ctrl + N`. O título da nota é o nome do arquivo.
+- **Alternar entre editar e ler:** `Ctrl + E`.
+- **Buscar qualquer comando do app:** `Ctrl + P`.
+
+### Texto
+
+| Você escreve | Aparece |
+|---|---|
+| `**negrito**` | **negrito** |
+| `*itálico*` | *itálico* |
+| `## Título` | um título de seção |
+| `- item` | uma lista com marcadores |
+| `1. item` | uma lista numerada |
+| `[[Outra nota]]` | um link para a nota "Outra nota" (se ela não existir, um clique cria) |
+
+### Fórmulas
+
+- **No meio do texto:** escreva entre cifrões. Por exemplo, `A área é $\pi r^2$.` aparece como "A área é πr²".
+- **Em destaque, centralizada:** use dois cifrões, cada um sozinho na sua linha:
+
+      $$
+      \int_0^1 x^2\,dx = \frac{1}{3}
+      $$
+
+Regras que evitam dor de cabeça:
+
+- **Não deixe espaço** colado nos cifrões: `$x$` funciona, `$ x $` não.
+- **Não deixe linha em branco** dentro de um `$$ ... $$`.
+- Dentro de `$$` vale tudo do LaTeX de matemática: `align*`, `cases`, `pmatrix`, `\begin{tikzcd}` etc.
+
+Como as fórmulas aparecem:
+
+- Na **primeira vez**, a fórmula aparece meio transparente por um instante. Isso é uma prévia enquanto o LaTeX trabalha. Depois ela fica nítida.
+- Da segunda vez em diante, ela aparece na hora.
+- Se o LaTeX ainda não tinha algum pacote, a primeira fórmula pode demorar alguns segundos enquanto ele baixa o pacote. Isso é normal.
+- Uma **fórmula vermelha** tem erro. Passe o mouse em cima para ver a mensagem.
+- **`Alt + clique`** numa fórmula copia o código LaTeX dela.
+
+Pacotes que já vêm carregados: `amsmath`, `amssymb`, `amsthm`, `mathtools`, `bm`, `cancel`, `xcolor`, `mhchem` (química: `\ce{H2O}`) e `tikz-cd`.
+
+## 6. Teoremas, definições e demonstrações
+
+Comece a linha com `> [!tipo] Título`. Todas as linhas de baixo que fazem parte do bloco também começam com `>`:
+
+    > [!teorema] Teorema de Pitágoras
+    > Num triângulo retângulo de catetos $a$, $b$ e hipotenusa $c$,
+    > $$
+    > a^2 + b^2 = c^2.
+    > $$
+
+    > [!prova] Demonstração
+    > Monte um quadrado de lado $a+b$ ...
+
+Tipos disponíveis (a cor e o ícone mudam conforme o tipo):
+
+| Tipo | Para quê |
+|---|---|
+| `definicao` | definições |
+| `teorema`, `proposicao` | resultados principais |
+| `lema`, `corolario` | resultados auxiliares |
+| `exemplo` | exemplos e exercícios |
+| `observacao` | comentários |
+| `prova` (ou `demonstracao`) | demonstrações: o ∎ no final é colocado sozinho |
+
+Os nomes em inglês também funcionam: `theorem`, `definition`, `lemma`, `corollary`, `proposition`, `example`, `remark` e `proof`.
+
+## 7. Diagramas e gráficos
+
+**Diagrama comutativo** (dentro de `$$`):
+
+    $$
+    \begin{tikzcd}
+    A \arrow[r, "f"] \arrow[d, "g"'] & B \arrow[d, "h"] \\
+    C \arrow[r, "k"'] & D
+    \end{tikzcd}
+    $$
+
+**Desenho ou gráfico em TikZ:** escreva três crases seguidas de `tikz`, o desenho e mais três crases para fechar.
+
+    ```tikz
+    \begin{tikzpicture}
+      \draw[->] (0,0) -- (2,0) node[right] {$x$};
+      \draw[->] (0,0) -- (0,2) node[above] {$y$};
+      \draw (0,0) circle (1);
+    \end{tikzpicture}
+    ```
+
+- O `pgfplots`, para gráficos de funções, já vem carregado.
+- Use um bloco com `latex` no lugar de `tikz` para qualquer outro trecho de LaTeX, como uma tabela complicada.
+- O desenho em preto acompanha o tema: fica branco no tema escuro.
+
+## 8. Seus próprios comandos (preamble.tex)
+
+Se você usa atalhos como `\R` para ℝ, crie um arquivo chamado **`preamble.tex`** na pasta principal do cofre. Tudo o que estiver nele vale para todas as fórmulas de todas as notas.
+
+1. No Windows Explorer, ative a exibição das extensões dos arquivos:
+   - **Windows 11:** "Exibir" → "Mostrar" → "Extensões de nomes de arquivos".
+   - **Windows 10:** aba "Exibir" → marque "Extensões de nomes de arquivos".
+2. Abra a pasta do cofre. No Mathsidian, clique com o botão direito numa nota e escolha "Mostrar no explorador de arquivos".
+3. Clique com o botão direito num espaço vazio → **"Novo" → "Documento de Texto"**.
+4. Renomeie o arquivo para `preamble.tex`. Ele não pode se chamar `preamble.tex.txt`. Confirme o aviso de mudança de extensão.
+5. Abra o arquivo com o Bloco de Notas, escreva suas definições e salve. Exemplo:
+
+       \newcommand{\R}{\mathbb{R}}
+       \newcommand{\N}{\mathbb{N}}
+       \DeclareMathOperator{\sen}{sen}
+
+Assim que você salva, as notas abertas se atualizam sozinhas.
+
+⚠️ **Não defina o mesmo comando duas vezes** e não use `\newcommand` para nomes que já existem no LaTeX, como `\Re` ou `\det`. Isso faz **todas** as fórmulas ficarem vermelhas. Se acontecer, apague a última linha que você adicionou.
+
+## 9. Trazer um arquivo LaTeX (.tex) para o Mathsidian
+
+### Jeito rápido: colar direto
+
+1. Abra o seu `.tex` no Bloco de Notas, aperte `Ctrl + A` (selecionar tudo) e depois `Ctrl + C` (copiar).
+2. Numa nota vazia do Mathsidian, aperte `Ctrl + V`.
+
+Se o texto tiver `\begin{document}`, ele vira nota automaticamente:
+
+- seções viram títulos;
+- teoremas e provas viram os blocos coloridos;
+- fórmulas viram `$$`;
+- seus `\newcommand` vão sozinhos para o `preamble.tex`.
+
+Para converter só um pedaço, copie o trecho, aperte `Ctrl + P` e escolha **"Colar LaTeX como Markdown"**.
+
+Para testar, use o arquivo `exemplo-diagramas.tex` deste projeto.
+
+### Jeito caprichado: uma IA quebra o documento em várias notas
+
+O arquivo [`PROMPT-LATEX-PARA-NOTAS.md`](PROMPT-LATEX-PARA-NOTAS.md) tem um texto pronto para colar em qualquer IA (ChatGPT, Claude, Gemini...). Ela transforma o documento em **notas atômicas**: uma nota por definição, uma por teorema (com a prova), uma por exemplo, todas ligadas por links, mais uma nota índice.
+
+1. Abra o `PROMPT-LATEX-PARA-NOTAS.md`, copie **tudo** e cole na IA.
+2. No final, onde está escrito `=== MEU LATEX ===`, cole o seu `.tex`, ou anexe o arquivo.
+3. Se você já tem um `preamble.tex`, cole ele junto e avise.
+4. Envie. Se a resposta parar com `=== CONTINUA ===`, responda `continue`.
+5. Se a IA entregar um **arquivo `.zip`**:
+   - extraia a pasta de dentro do `.zip` para dentro da pasta do cofre;
+   - se vier um `preamble.tex`, coloque ele na pasta principal do cofre. Se você já tinha um, copie as linhas novas para o final do seu.
+6. Se a IA entregar **texto** no lugar do `.zip`, cada nota vem entre `=== ARQUIVO: nome ===` e `=== FIM ===`. Crie uma nota com esse nome (`Ctrl + N`) e cole o conteúdo de cada uma.
+
+## 10. Deu problema?
+
+| O que acontece | O que fazer |
+|---|---|
+| As fórmulas ficam transparentes para sempre, ou vermelhas com "TeX não encontrado" | O MiKTeX não foi instalado ou o computador não foi reiniciado. Refaça a [seção 2](#2-instalar-o-miktex-o-motor-das-fórmulas) e reinicie. |
+| `latex --version` diz "não é reconhecido como um comando" | Reinstale o MiKTeX e, no fim, reinicie o computador. |
+| A primeira fórmula demora muito | O MiKTeX está baixando pacotes. Espere e confira a internet. Da segunda vez em diante é instantâneo. |
+| Uma fórmula vermelha | Erro de LaTeX nela. Passe o mouse para ler o erro. Confira chaves `{ }` sem par e espaço colado nos `$`. |
+| **Todas** as fórmulas vermelhas | Provavelmente é o `preamble.tex`: um comando repetido ou inválido. Desfaça a última mudança. |
+| Fórmulas antigas com aparência estranha depois de mudar algo | Feche o app e apague a pasta `latex-cache` dentro de `%APPDATA%\Mathsidian`. Para chegar lá, aperte `Windows + R`, cole `%APPDATA%\Mathsidian` e dê Enter. |
+| O Windows bloqueia o `mathsidian.exe` | "Mais informações" → "Executar assim mesmo" ([seção 3](#3-instalar-e-abrir-o-mathsidian)). |
+
+---
+
+## 11. Para desenvolvedores
+
+### Pastas
+
+- `fonte-original/`: conteúdo bruto extraído, intocado.
+- `fonte-nucleo/`: núcleo do app formatado com Prettier, com nomes e títulos trocados para "Mathsidian".
+- `fonte-carregador/`: carregador Electron. O nome é `mathsidian`, a atualização automática está desligada e ele carrega o `nucleo.asar`.
+- `mathsidian-app/`: o app rodável (`mathsidian.exe`). **Não está no repositório**, porque passa do limite de 100 MB por arquivo do GitHub.
+- `rea-evidencias.json`: evidências do REA. Também fica fora do repositório pelo tamanho.
+
+Os dados e a configuração ficam em `%APPDATA%\Mathsidian`, separados do Obsidian original.
+
+### Editar e reempacotar
+
+A partir da pasta do projeto:
+
     npx -y @electron/asar@3.2.17 pack fonte-nucleo mathsidian-app\resources\nucleo.asar
     npx -y @electron/asar@3.2.17 pack fonte-carregador mathsidian-app\resources\app.asar --unpack "*.node"
 
-## Limites
-- Nomes locais minificados (`e`, `t`, `n`...) não são recuperáveis.
-- Código proprietário: só estudo pessoal, não redistribua.
+### Limites
 
-## Matemática (lib/mathsidian-math)
-O MathJax foi removido. Toda fórmula `$...$` / `$$...$$` é compilada pelo **TeX instalado** (MiKTeX: `latex` + `dvisvgm`) e vira SVG que segue a cor do tema.
-- Fórmulas são compiladas em lote; o resultado fica em cache em `%APPDATA%\Mathsidian\latex-cache` (abre instantâneo da 2ª vez).
-- Enquanto o TeX compila, o KaTeX mostra uma prévia (meio transparente).
-- Fórmula com erro fica vermelha; passe o mouse para ver a mensagem do TeX.
-- Pacotes já carregados: amsmath, amssymb, amsthm, mathtools, bm, cancel, xcolor, mhchem, tikz-cd.
-- `preamble.tex` na raiz do cofre entra em todo documento (`\usepackage`, `\newcommand`, `\DeclareMathOperator`...). Salvou, re-renderiza.
-- Blocos ` ```tikz ` (corpo de um tikzpicture, com pgfplots) e ` ```latex ` (qualquer trecho LaTeX, ou documento inteiro com `\documentclass`).
-- Callouts de teoria: `> [!theorem]`, `[!definition]`, `[!lemma]`, `[!corollary]`, `[!proposition]`, `[!example]`, `[!remark]`, `[!proof]` (termina com ∎). Também em português: teorema, definicao, lema, corolario, proposicao, exemplo, observacao, prova/demonstracao.
-- Alt+clique numa fórmula copia o LaTeX.
-- Quick Look (preview no Explorer) não tem TeX: lá a saída é só KaTeX.
-- `loadMathJax()` continua existindo na API de plugins só por compatibilidade (não carrega nada).
+- Os nomes locais minificados (`e`, `t`, `n`...) não são recuperáveis.
+- O código é proprietário: só para estudo pessoal, não redistribua.
 
-## Importar LaTeX (lib/mathsidian-math/import.js)
-- Colar numa nota um documento com `\begin{document}` converte sozinho para Markdown: teoremas/provas viram callouts, `\[..\]`/align/tikzcd viram `$$`, `\section` vira `##`, `\textbf`/`\emph` viram negrito/itálico.
-- `\newcommand`, `\DeclareMathOperator` e `\usetikzlibrary` do preâmbulo vão para o `preamble.tex` do cofre (só o que ainda não está lá).
-- Para converter um trecho sem `\begin{document}`: copie e rode o comando "Colar LaTeX como Markdown" (Ctrl+P).
-- Exemplo para testar: `exemplo-diagramas.tex`.
+### Motor de matemática (`fonte-nucleo/lib/mathsidian-math/math.js`)
+
+O MathJax foi removido. Toda fórmula `$...$` / `$$...$$` é compilada pelo TeX instalado (`latex` + `dvisvgm`) e vira um SVG inline com `currentColor`, por isso segue a cor do tema.
+
+- **Compilação:**
+  - as fórmulas são compiladas em lotes por 3 workers em paralelo;
+  - o cabeçalho (pacotes + `preamble.tex`) vira um `.fmt` pré-compilado;
+  - um lote com erro é dividido ao meio até isolar a fórmula culpada.
+- **Cache:** fica em `%APPDATA%\Mathsidian\latex-cache`. As fórmulas do cofre são pré-compiladas em segundo plano ao abrir o app e ao salvar uma nota.
+- **Prévia:** o KaTeX mostra uma prévia enquanto o TeX compila. No Quick Look (prévia do Explorer) não há TeX, então lá a saída final é o KaTeX.
+- **`preamble.tex` na raiz do cofre:** entra em todo documento. As definições (`\newcommand`, `\DeclareMathOperator`...) também valem no KaTeX. Ao salvar o arquivo, tudo é re-renderizado.
+- **Blocos de código:**
+  - `tikz` recebe o corpo de um `tikzpicture`, com `pgfplots` e as bibliotecas `arrows.meta`, `calc`, `positioning`, `decorations.pathreplacing`, `patterns` e `shapes`;
+  - `latex` recebe qualquer trecho, ou um documento inteiro com `\documentclass`.
+- **Callouts de teoria:** os estilos ficam em `math.css`.
+- **API de plugins:** `loadMathJax()` continua existindo só por compatibilidade e não carrega nada.
+
+### Importar LaTeX (`fonte-nucleo/lib/mathsidian-math/import.js`)
+
+- Colar um documento com `\begin{document}` converte o texto para Markdown:
+  - teoremas e provas viram callouts;
+  - `\[..\]`, `align` e `tikzcd` viram `$$`;
+  - `\section` vira `##`.
+- `\newcommand`, `\DeclareMathOperator` e `\usetikzlibrary` do preâmbulo são mesclados ao `preamble.tex` do cofre, só o que ainda não está lá.
+- O comando `mathsidian:paste-latex` ("Colar LaTeX como Markdown") converte qualquer trecho da área de transferência.
