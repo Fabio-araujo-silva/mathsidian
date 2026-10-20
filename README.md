@@ -6,13 +6,16 @@ Um aplicativo de anotações para matemática, baseado no Obsidian. Você escrev
 
 ## Instalar
 
-### **[Baixar Mathsidian-Setup.exe](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest/download/Mathsidian-Setup.exe)**
+1. Aperte a tecla **Windows**, digite `powershell` e aperte **Enter**.
+2. Cole a linha abaixo na janela azul (clique com o botão direito para colar) e aperte **Enter**:
 
-Abra o arquivo baixado e clique em **Avançar** até o fim. Pronto: o app, o LaTeX (MiKTeX) e os atalhos ficam instalados, sem precisar reiniciar.
+       irm https://raw.githubusercontent.com/Fabio-araujo-silva/mathsidian/main/instalar.ps1 | iex
 
-> Se o Windows mostrar **"O Windows protegeu o computador"**, clique em **"Mais informações"** → **"Executar assim mesmo"** (o app não tem assinatura digital de empresa).
+3. Espere uns minutos. Ele instala o app, o LaTeX (MiKTeX) e os atalhos, e abre o Mathsidian sozinho. Não precisa reiniciar.
 
-Precisa de Windows 10 ou 11, uns 2 GB livres e internet durante a instalação. Para atualizar, rode o Setup de novo; para desinstalar, use **Configurações → Aplicativos**.
+> Prefere clicar? Baixe o **[Mathsidian-Setup.exe](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest/download/Mathsidian-Setup.exe)** e abra. Nesse caso o Windows mostra **"O Windows protegeu o computador"**: clique em **"Mais informações"** → **"Executar assim mesmo"** (o app não tem assinatura digital de empresa).
+
+Precisa de Windows 10 ou 11, uns 2 GB livres e internet durante a instalação. Para atualizar, rode o mesmo comando de novo; para desinstalar, use **Configurações → Aplicativos**.
 
 O Mathsidian guarda as configurações numa pasta própria: se você usa o Obsidian normal, nada dele é alterado.
 
@@ -190,13 +193,13 @@ O arquivo [`PROMPT-LATEX-PARA-NOTAS.md`](PROMPT-LATEX-PARA-NOTAS.md) tem um text
 
 | O que acontece | O que fazer |
 |---|---|
-| As fórmulas ficam transparentes para sempre, ou vermelhas com "TeX não encontrado" | O MiKTeX não foi instalado ou o computador não foi reiniciado. Rode o [Setup](#instalar) de novo; se persistir, instale o MiKTeX manualmente em https://miktex.org/download, marcando "Install missing packages on-the-fly: Yes". |
+| As fórmulas ficam transparentes para sempre, ou vermelhas com "TeX não encontrado" | O MiKTeX não foi instalado ou o computador não foi reiniciado. Rode o [comando de instalação](#instalar) de novo; se persistir, instale o MiKTeX manualmente em https://miktex.org/download, marcando "Install missing packages on-the-fly: Yes". |
 | `latex --version` diz "não é reconhecido como um comando" | Reinstale o MiKTeX e, no fim, reinicie o computador. |
 | A primeira fórmula demora muito | O MiKTeX está baixando pacotes. Espere e confira a internet. Da segunda vez em diante é instantâneo. |
 | Uma fórmula vermelha | Erro de LaTeX nela. Passe o mouse para ler o erro. Confira chaves `{ }` sem par e espaço colado nos `$`. |
 | **Todas** as fórmulas vermelhas | Provavelmente é o `preamble.tex`: um comando repetido ou inválido. Desfaça a última mudança. |
 | Fórmulas antigas com aparência estranha depois de mudar algo | Feche o app e apague a pasta `latex-cache` dentro de `%APPDATA%\Mathsidian`. Para chegar lá, aperte `Windows + R`, cole `%APPDATA%\Mathsidian` e dê Enter. |
-| O Windows bloqueia o `mathsidian.exe` | "Mais informações" → "Executar assim mesmo" ([Instalar](#instalar)). |
+| O Windows bloqueia o `mathsidian.exe` | Instale pelo [comando do PowerShell](#instalar), que não tem esse aviso, ou clique em "Mais informações" → "Executar assim mesmo". |
 
 ---
 
