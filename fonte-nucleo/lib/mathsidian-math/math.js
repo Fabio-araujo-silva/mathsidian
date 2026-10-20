@@ -37,12 +37,29 @@
     return dir;
   }
 
+  // MiKTeX recém-instalado ainda não está no PATH do app (só depois de reiniciar): procura nos lugares padrão
+  function texEnv() {
+    var env = Object.assign({}, process.env);
+    if (process.platform !== "win32") return env;
+    var key = Object.keys(env).find(function (k) {
+      return k.toUpperCase() === "PATH";
+    }) || "PATH";
+    var dirs = [
+      path.join(env.LOCALAPPDATA || "", "Programs", "MiKTeX", "miktex", "bin", "x64"),
+      path.join(env.ProgramFiles || "C:\\Program Files", "MiKTeX", "miktex", "bin", "x64"),
+    ].filter(function (d) {
+      return fs.existsSync(path.join(d, "latex.exe"));
+    });
+    env[key] = dirs.concat([env[key] || ""]).join(path.delimiter);
+    return env;
+  }
+
   function run(cmd, args, cwd) {
     return new Promise(function (resolve, reject) {
       childProcess.execFile(
         cmd,
         args,
-        { cwd: cwd, timeout: 180000, windowsHide: true, maxBuffer: 64 * 1024 * 1024 },
+        { cwd: cwd, env: texEnv(), timeout: 180000, windowsHide: true, maxBuffer: 64 * 1024 * 1024 },
         function (err, stdout, stderr) {
           if (err) {
             err.output = String(stdout || "") + String(stderr || "");

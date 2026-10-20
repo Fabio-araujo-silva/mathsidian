@@ -50,15 +50,13 @@ Se aparecer um texto começando com `MiKTeX-pdfTeX`, deu certo. Se aparecer *"n�
 
 ## 3. Instalar e abrir o Mathsidian
 
-**Jeito fácil (recomendado):**
+1. Baixe o **[Mathsidian-Setup.exe](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest/download/Mathsidian-Setup.exe)**.
+2. Dê dois cliques nele e vá clicando em **Avançar**. Ele instala o app, o LaTeX (MiKTeX) se faltar e cria os atalhos. Não precisa reiniciar.
+3. Se aparecer **"O Windows protegeu o computador"**, clique em **"Mais informações"** e depois em **"Executar assim mesmo"** (o app não tem assinatura digital de empresa).
 
-1. Clone o repositório (`git clone https://github.com/Fabio-araujo-silva/mathsidian.git`) ou, na página do GitHub, clique em **Code → Download ZIP** e extraia.
-2. Dê dois cliques em **`instalar.bat`**. Ele baixa o app, instala em `%LOCALAPPDATA%\Programs\Mathsidian`, cria atalhos na Área de Trabalho e no Menu Iniciar e oferece instalar o MiKTeX se ele faltar.
-3. Se o Windows mostrar **"O Windows protegeu o computador"**, clique em **"Mais informações"** e depois em **"Executar assim mesmo"**. O app não tem assinatura digital de empresa.
+Pronto: abra pelo atalho **Mathsidian** na Área de Trabalho. Para atualizar, baixe e rode o Setup de novo. Para desinstalar, use **Configurações → Aplicativos**.
 
-Para atualizar, rode o `instalar.bat` de novo.
-
-**Jeito manual:** baixe `mathsidian-app.zip` nos [Releases](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest), clique com o botão direito → **"Extrair tudo..."**, guarde a pasta num lugar fixo (não em Downloads) e abra `mathsidian-app\mathsidian.exe`.
+> Com isso, a seção 2 (MiKTeX) é opcional: o Setup já faz tudo.
 
 **Para criar um atalho na Área de Trabalho:**
 
@@ -243,7 +241,7 @@ O arquivo [`PROMPT-LATEX-PARA-NOTAS.md`](PROMPT-LATEX-PARA-NOTAS.md) tem um text
 - `fonte-original/`: conteúdo bruto extraído, intocado.
 - `fonte-nucleo/`: núcleo do app formatado com Prettier, com nomes e títulos trocados para "Mathsidian".
 - `fonte-carregador/`: carregador Electron. O nome é `mathsidian`, a atualização automática está desligada e ele carrega o `nucleo.asar`.
-- `mathsidian-app/`: o app rodável (`mathsidian.exe`). **Não está no repositório**, porque passa do limite de 100 MB por arquivo do GitHub. Vai zipado nos Releases: `tar -a -cf dist/mathsidian-app.zip mathsidian-app` e depois `gh release create vX.Y.Z dist/mathsidian-app.zip`.
+- `mathsidian-app/`: o app rodável (`mathsidian.exe`). **Não está no repositório**, porque passa do limite de 100 MB por arquivo do GitHub. Vai nos Releases como `Mathsidian-Setup.exe`: copie o app para `dist/build/`, reempacote o `nucleo.asar` lá, rode `ISCC.exe instalador\mathsidian.iss` e depois `gh release create vX.Y.Z dist/Mathsidian-Setup.exe`.
 - `rea-evidencias.json`: evidências do REA. Também fica fora do repositório pelo tamanho.
 
 Os dados e a configuração ficam em `%APPDATA%\Mathsidian`, separados do Obsidian original.
