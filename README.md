@@ -4,68 +4,34 @@ Um aplicativo de anotações para matemática, baseado no Obsidian. Você escrev
 
 > **Aviso:** este projeto é feito a partir do código do Obsidian, que é proprietário. É só para estudo pessoal: não redistribua.
 
+## Instalar
+
+### **[Baixar Mathsidian-Setup.exe](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest/download/Mathsidian-Setup.exe)**
+
+Abra o arquivo baixado e clique em **Avançar** até o fim. Pronto: o app, o LaTeX (MiKTeX) e os atalhos ficam instalados, sem precisar reiniciar.
+
+> Se o Windows mostrar **"O Windows protegeu o computador"**, clique em **"Mais informações"** → **"Executar assim mesmo"** (o app não tem assinatura digital de empresa).
+
+Precisa de Windows 10 ou 11, uns 2 GB livres e internet durante a instalação. Para atualizar, rode o Setup de novo; para desinstalar, use **Configurações → Aplicativos**.
+
+O Mathsidian guarda as configurações numa pasta própria: se você usa o Obsidian normal, nada dele é alterado.
+
 ---
 
 ## Sumário
 
-1. [Antes de começar](#1-antes-de-começar)
-2. [Instalar o MiKTeX (o "motor" das fórmulas)](#2-instalar-o-miktex-o-motor-das-fórmulas)
-3. [Instalar e abrir o Mathsidian](#3-instalar-e-abrir-o-mathsidian)
-4. [Criar seu cofre (a pasta das notas)](#4-criar-seu-cofre-a-pasta-das-notas)
-5. [Escrever notas e fórmulas](#5-escrever-notas-e-fórmulas)
-6. [Teoremas, definições e demonstrações](#6-teoremas-definições-e-demonstrações)
-7. [Diagramas e gráficos](#7-diagramas-e-gráficos)
-8. [Seus próprios comandos (preamble.tex)](#8-seus-próprios-comandos-preambletex)
-9. [Trazer um arquivo LaTeX (.tex) para o Mathsidian](#9-trazer-um-arquivo-latex-tex-para-o-mathsidian)
-10. [Deu problema?](#10-deu-problema)
-11. [Para desenvolvedores](#11-para-desenvolvedores)
+1. [Criar seu cofre (a pasta das notas)](#1-criar-seu-cofre-a-pasta-das-notas)
+2. [Escrever notas e fórmulas](#2-escrever-notas-e-fórmulas)
+3. [Teoremas, definições e demonstrações](#3-teoremas-definições-e-demonstrações)
+4. [Diagramas e gráficos](#4-diagramas-e-gráficos)
+5. [Seus próprios comandos (preamble.tex)](#5-seus-próprios-comandos-preambletex)
+6. [Trazer um arquivo LaTeX (.tex) para o Mathsidian](#6-trazer-um-arquivo-latex-tex-para-o-mathsidian)
+7. [Deu problema?](#7-deu-problema)
+8. [Para desenvolvedores](#8-para-desenvolvedores)
 
 ---
 
-## 1. Antes de começar
-
-Você vai precisar de:
-
-- Um computador com **Windows 10 ou 11**.
-- Cerca de **2 GB livres** no disco: uns 400 MB para o app e o resto para o MiKTeX.
-- **Internet**, só na instalação e nas primeiras vezes que usar fórmulas.
-- Nada além disso: o programa é baixado sozinho pelo instalador (ele fica nos [Releases](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest)).
-
-## 2. Instalar o MiKTeX (o "motor" das fórmulas)
-
-O Mathsidian usa o LaTeX instalado no seu computador para desenhar as fórmulas. O LaTeX mais fácil de instalar no Windows é o **MiKTeX**.
-
-1. Entre em **https://miktex.org/download** e clique em **Download** na aba **Windows**.
-2. Abra o arquivo baixado (algo como `basic-miktex-...-x64.exe`).
-3. Aceite a licença e clique em **Avançar**. Pode deixar as opções como estão até chegar na tela **"Settings"**.
-4. Nessa tela, no campo **"Install missing packages on-the-fly"**, escolha **"Yes"**. ⚠️ Esse passo é o mais importante: ele deixa o MiKTeX baixar sozinho o que faltar, sem ficar perguntando.
-5. Termine a instalação.
-6. **Reinicie o computador.** Sem isso, o Mathsidian pode não encontrar o MiKTeX.
-
-**Para conferir se deu certo:** aperte a tecla **Windows**, digite `cmd` e aperte **Enter**. Na janela preta que abrir, digite o comando abaixo e aperte **Enter**:
-
-    latex --version
-
-Se aparecer um texto começando com `MiKTeX-pdfTeX`, deu certo. Se aparecer *"não é reconhecido como um comando"*, veja a seção [Deu problema?](#10-deu-problema).
-
-## 3. Instalar e abrir o Mathsidian
-
-1. Baixe o **[Mathsidian-Setup.exe](https://github.com/Fabio-araujo-silva/mathsidian/releases/latest/download/Mathsidian-Setup.exe)**.
-2. Dê dois cliques nele e vá clicando em **Avançar**. Ele instala o app, o LaTeX (MiKTeX) se faltar e cria os atalhos. Não precisa reiniciar.
-3. Se aparecer **"O Windows protegeu o computador"**, clique em **"Mais informações"** e depois em **"Executar assim mesmo"** (o app não tem assinatura digital de empresa).
-
-Pronto: abra pelo atalho **Mathsidian** na Área de Trabalho. Para atualizar, baixe e rode o Setup de novo. Para desinstalar, use **Configurações → Aplicativos**.
-
-> Com isso, a seção 2 (MiKTeX) é opcional: o Setup já faz tudo.
-
-**Para criar um atalho na Área de Trabalho:**
-
-1. Clique com o botão direito em `mathsidian.exe`.
-2. Escolha **"Mostrar mais opções"** (só no Windows 11) e depois **"Enviar para" → "Área de trabalho (criar atalho)"**.
-
-> O Mathsidian guarda as configurações dele numa pasta separada. Se você também usa o Obsidian normal, nada do Obsidian é alterado.
-
-## 4. Criar seu cofre (a pasta das notas)
+## 1. Criar seu cofre (a pasta das notas)
 
 No Mathsidian, um **cofre** é só uma pasta do seu computador onde ficam as notas. Cada nota é um arquivo de texto `.md`, então você nunca perde nada: dá para abrir as notas até no Bloco de Notas.
 
@@ -76,7 +42,7 @@ No Mathsidian, um **cofre** é só uma pasta do seu computador onde ficam as not
 
 Se você já tem um cofre do Obsidian, use **"Abrir pasta como cofre"** e escolha a pasta dele.
 
-## 5. Escrever notas e fórmulas
+## 2. Escrever notas e fórmulas
 
 - **Nova nota:** `Ctrl + N`. O título da nota é o nome do arquivo.
 - **Alternar entre editar e ler:** `Ctrl + E`.
@@ -118,7 +84,7 @@ Como as fórmulas aparecem:
 
 Pacotes que já vêm carregados: `amsmath`, `amssymb`, `amsthm`, `mathtools`, `bm`, `cancel`, `xcolor`, `mhchem` (química: `\ce{H2O}`) e `tikz-cd`.
 
-## 6. Teoremas, definições e demonstrações
+## 3. Teoremas, definições e demonstrações
 
 Comece a linha com `> [!tipo] Título`. Todas as linhas de baixo que fazem parte do bloco também começam com `>`:
 
@@ -144,7 +110,7 @@ Tipos disponíveis (a cor e o ícone mudam conforme o tipo):
 
 Os nomes em inglês também funcionam: `theorem`, `definition`, `lemma`, `corollary`, `proposition`, `example`, `remark` e `proof`.
 
-## 7. Diagramas e gráficos
+## 4. Diagramas e gráficos
 
 **Diagrama comutativo** (dentro de `$$`):
 
@@ -169,7 +135,7 @@ Os nomes em inglês também funcionam: `theorem`, `definition`, `lemma`, `coroll
 - Use um bloco com `latex` no lugar de `tikz` para qualquer outro trecho de LaTeX, como uma tabela complicada.
 - O desenho em preto acompanha o tema: fica branco no tema escuro.
 
-## 8. Seus próprios comandos (preamble.tex)
+## 5. Seus próprios comandos (preamble.tex)
 
 Se você usa atalhos como `\R` para ℝ, crie um arquivo chamado **`preamble.tex`** na pasta principal do cofre. Tudo o que estiver nele vale para todas as fórmulas de todas as notas.
 
@@ -189,7 +155,7 @@ Assim que você salva, as notas abertas se atualizam sozinhas.
 
 ⚠️ **Não defina o mesmo comando duas vezes** e não use `\newcommand` para nomes que já existem no LaTeX, como `\Re` ou `\det`. Isso faz **todas** as fórmulas ficarem vermelhas. Se acontecer, apague a última linha que você adicionou.
 
-## 9. Trazer um arquivo LaTeX (.tex) para o Mathsidian
+## 6. Trazer um arquivo LaTeX (.tex) para o Mathsidian
 
 ### Jeito rápido: colar direto
 
@@ -220,21 +186,21 @@ O arquivo [`PROMPT-LATEX-PARA-NOTAS.md`](PROMPT-LATEX-PARA-NOTAS.md) tem um text
    - se vier um `preamble.tex`, coloque ele na pasta principal do cofre. Se você já tinha um, copie as linhas novas para o final do seu.
 6. Se a IA entregar **texto** no lugar do `.zip`, cada nota vem entre `=== ARQUIVO: nome ===` e `=== FIM ===`. Crie uma nota com esse nome (`Ctrl + N`) e cole o conteúdo de cada uma.
 
-## 10. Deu problema?
+## 7. Deu problema?
 
 | O que acontece | O que fazer |
 |---|---|
-| As fórmulas ficam transparentes para sempre, ou vermelhas com "TeX não encontrado" | O MiKTeX não foi instalado ou o computador não foi reiniciado. Refaça a [seção 2](#2-instalar-o-miktex-o-motor-das-fórmulas) e reinicie. |
+| As fórmulas ficam transparentes para sempre, ou vermelhas com "TeX não encontrado" | O MiKTeX não foi instalado ou o computador não foi reiniciado. Rode o [Setup](#instalar) de novo; se persistir, instale o MiKTeX manualmente em https://miktex.org/download, marcando "Install missing packages on-the-fly: Yes". |
 | `latex --version` diz "não é reconhecido como um comando" | Reinstale o MiKTeX e, no fim, reinicie o computador. |
 | A primeira fórmula demora muito | O MiKTeX está baixando pacotes. Espere e confira a internet. Da segunda vez em diante é instantâneo. |
 | Uma fórmula vermelha | Erro de LaTeX nela. Passe o mouse para ler o erro. Confira chaves `{ }` sem par e espaço colado nos `$`. |
 | **Todas** as fórmulas vermelhas | Provavelmente é o `preamble.tex`: um comando repetido ou inválido. Desfaça a última mudança. |
 | Fórmulas antigas com aparência estranha depois de mudar algo | Feche o app e apague a pasta `latex-cache` dentro de `%APPDATA%\Mathsidian`. Para chegar lá, aperte `Windows + R`, cole `%APPDATA%\Mathsidian` e dê Enter. |
-| O Windows bloqueia o `mathsidian.exe` | "Mais informações" → "Executar assim mesmo" ([seção 3](#3-instalar-e-abrir-o-mathsidian)). |
+| O Windows bloqueia o `mathsidian.exe` | "Mais informações" → "Executar assim mesmo" ([Instalar](#instalar)). |
 
 ---
 
-## 11. Para desenvolvedores
+## 8. Para desenvolvedores
 
 ### Pastas
 
