@@ -3,3 +3,7 @@ mathsidian-app/
 
 # evidências do REA (213 MB)
 rea-evidencias.json
+
+# zips gerados para os Releases
+dist/
+mathsidian-app.7z
