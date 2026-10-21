@@ -65466,11 +65466,26 @@
         }
         return t;
       }
+      // Mathsidian: busca ignora acentos ("preambulo" acha "preâmbulo"). Mantém o comprimento do
+      // texto, pra os trechos destacados continuarem nas posições certas.
+      var MATHSIDIAN_MARKS = /[\u0300-\u036f]/g,
+        MATHSIDIAN_NON_ASCII = /[^\u0000-\u007f]/;
+      function mathsidianFold(e) {
+        if (!MATHSIDIAN_NON_ASCII.test(e)) return e;
+        var t = e.normalize("NFD").replace(MATHSIDIAN_MARKS, "");
+        if (t.length === e.length) return t;
+        for (var n = "", i = 0; i < e.length; i++) {
+          var r = e.charAt(i),
+            o = r.normalize("NFD").replace(MATHSIDIAN_MARKS, "");
+          n += 1 === o.length ? o : r;
+        }
+        return n;
+      }
       var rx = /[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/,
         ox = /\s/,
         ax = /[\u0F00-\u0FFF\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
       function sx(e) {
-        for (var t = e.toLowerCase(), n = [], i = 0, r = 0; r < t.length; r++) {
+        for (var t = mathsidianFold(e.toLowerCase()), n = [], i = 0, r = 0; r < t.length; r++) {
           var o = t.charAt(r);
           ox.test(o)
             ? (i !== r && n.push(t.substring(i, r)), (i = r + 1))
@@ -65503,7 +65518,7 @@
       }
       function ux(e, t, n, i) {
         if (0 === e.length) return null;
-        for (var r = n.toLowerCase(), o = 0, a = 0, s = [], l = 0; l < e.length; l++) {
+        for (var r = mathsidianFold(n.toLowerCase()), o = 0, a = 0, s = [], l = 0; l < e.length; l++) {
           var c = e[l],
             u = r.indexOf(c, a);
           if (-1 === u) return null;
@@ -65541,7 +65556,7 @@
           }
       }
       function fx(e, t) {
-        for (var n = t.toLowerCase(), i = [], r = 0, o = e; r < o.length; r++) {
+        for (var n = mathsidianFold(t.toLowerCase()), i = [], r = 0, o = e; r < o.length; r++) {
           var a = o[r];
           if (a) {
             for (var s = !1, l = -1, c = a.length; -1 !== (l = n.indexOf(a, l)); )
@@ -65556,7 +65571,7 @@
         return i ? { score: cx(i, t.length, n.length, 0), matches: i } : null;
       }
       function gx(e) {
-        var t = e.toLowerCase().split(" ");
+        var t = mathsidianFold(e.toLowerCase()).split(" ");
         return function (n) {
           return vx(t, e, n);
         };

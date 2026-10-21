@@ -1,7 +1,7 @@
 ; Setup do Mathsidian (Inno Setup 6). Gerar com:
 ;   ISCC.exe instalador\mathsidian.iss   (usa o app de dist\build\mathsidian-app)
 
-#define Versao "1.0.68"
+#define Versao "1.0.69"
 
 [Setup]
 AppId={{6767A0F1-4D2B-4C67-9E67-6767MATHSID}
