@@ -4,7 +4,8 @@
 // - Enquanto o TeX compila, o KaTeX mostra uma prévia instantânea. Sem TeX/Node (Quick Look),
 //   o KaTeX é a saída final.
 // - Blocos ```latex / ```tikz são documentos TeX inteiros, compilados do mesmo jeito.
-// - preamble.tex na raiz do cofre entra em todo documento TeX; as definições valem também pro KaTeX.
+// - Preâmbulo em cascata: preamble.tex da raiz (todas as notas), preamble.tex de cada pasta (notas
+//   da pasta e subpastas) e a propriedade "preamble" da nota. As definições valem também pro KaTeX.
 // - Alt+clique numa fórmula copia o LaTeX dela.
 (function () {
   "use strict";
@@ -16,13 +17,10 @@
   var childProcess = nodeRequire && nodeRequire("child_process");
   var hasTex = !!childProcess;
 
-  var PREAMBLE_FILE = "preamble.tex";
+  var PREAMBLE_NAME = "preamble.tex"; // na raiz vale pro cofre todo; numa pasta, pra pasta e subpastas
+  var PREAMBLE_PROP = "preamble"; // propriedade da nota: arquivos .tex extras ou LaTeX direto
   var EM_PER_PT = 1.15 / 10; // 10pt do TeX = 1.15em do texto
   var BATCH_DELAY = 100;
-
-  var macros = {};
-  var preambleSource = "";
-  var preambleLoaded = false;
 
   // ---------- utilitários ----------
 
@@ -139,8 +137,9 @@
   }
 
   // ---------- formato pré-compilado ----------
-  // O cabeçalho das fórmulas (pacotes + preamble.tex) vira um .fmt: cada lote pula o carregamento
-  // dos pacotes (tikz-cd sozinho custa ~1 s). Se o cabeçalho não compilar, cai no documento inteiro.
+  // O cabeçalho das fórmulas (pacotes + preâmbulo) vira um .fmt: cada lote pula o carregamento
+  // dos pacotes (tikz-cd sozinho custa ~1 s). Cada preâmbulo diferente tem o seu .fmt.
+  // Se o cabeçalho não compilar, cai no documento inteiro.
   var formats = new Map(); // nome -> Promise<nome|null>
 
   function ensureFormat(header) {
@@ -242,7 +241,7 @@
 
   // ---------- KaTeX (prévia) ----------
 
-  function katexOptions(display) {
+  function katexOptions(display, macros) {
     return {
       displayMode: display,
       throwOnError: true,
@@ -254,9 +253,10 @@
     };
   }
 
-  function katexInto(el, source, display) {
+  function katexInto(el, source, display, pre) {
     try {
-      window.katex.render(source, el, katexOptions(display));
+      // copia: uma fórmula com \def não pode vazar pro preâmbulo das outras
+      window.katex.render(source, el, katexOptions(display, Object.assign({}, macrosFor(pre))));
       return true;
     } catch (err) {
       el.setText(source);
@@ -294,8 +294,8 @@
     return "\\begin{preview}\\begin{varwidth}{\\linewidth}" + full + "\\end{varwidth}\\end{preview}";
   }
 
-  function mathHeader() {
-    return ["\\documentclass{article}", MATH_PACKAGES, preambleSource, "\\usepackage[active,tightpage]{preview}"].join("\n");
+  function mathHeader(pre) {
+    return ["\\documentclass{article}", MATH_PACKAGES, pre, "\\usepackage[active,tightpage]{preview}"].join("\n");
   }
 
   function mathBody(snippets) {
@@ -303,13 +303,13 @@
   }
 
   var mathCache = new Map(); // key -> page | {error}
-  var pending = new Map(); // key -> {source, display}
+  var pending = new Map(); // key -> {source, display, pre}
   var batchTimer = 0;
 
   var MATH_LAYOUT = "v2"; // muda quando o snippet() muda, pra não reaproveitar SVG antigo
 
-  function mathKey(source, display) {
-    return sha1(MATH_LAYOUT + "\0" + preambleSource + "\0" + (display ? "D" : "I") + "\0" + source);
+  function mathKey(source, display, pre) {
+    return sha1(MATH_LAYOUT + "\0" + pre + "\0" + (display ? "D" : "I") + "\0" + source);
   }
 
   function readMathCache(key) {
@@ -350,17 +350,15 @@
 
   var compiling = new Set(); // chaves já entregues a um worker
 
-  // Compila um lote no worker `slot`. Uma fórmula ruim derruba o lote inteiro: aí divide e
-  // recompila no mesmo worker pra isolar a culpada.
-  function compileBatch(items, slot) {
-    var header = mathHeader();
-    return ensureFormat(header)
-      .then(function (fmt) {
-        var snippets = items.map(function (it) {
-          return snippet(it.source, it.display);
-        });
-        return compileDocument(fmt ? mathBody(snippets) : header + "\n" + mathBody(snippets), slot, fmt);
+  // Compila no worker `slot` um lote de fórmulas com o mesmo preâmbulo (fmt: o .fmt dele, ou null).
+  // Uma fórmula ruim derruba o lote inteiro: aí divide e recompila no mesmo worker pra isolar a culpada.
+  function compileBatch(items, slot, fmt) {
+    var body = mathBody(
+      items.map(function (it) {
+        return snippet(it.source, it.display);
       })
+    );
+    return compileDocument(fmt ? body : mathHeader(items[0].pre) + "\n" + body, slot, fmt)
       .then(
         function (pages) {
           if (pages.length !== items.length) throw new Error("número de páginas inesperado");
@@ -371,39 +369,48 @@
         function (err) {
           if (items.length === 1) return settle(items[0].key, { error: err.message });
           var mid = Math.ceil(items.length / 2);
-          return compileBatch(items.slice(0, mid), slot).then(function () {
-            return compileBatch(items.slice(mid), slot);
+          return compileBatch(items.slice(0, mid), slot, fmt).then(function () {
+            return compileBatch(items.slice(mid), slot, fmt);
           });
         }
       );
   }
 
-  // Divide em lotes e manda pros workers. Lotes menores na frente = paralelismo; no fundo, lotes maiores.
+  // Agrupa por preâmbulo, divide em lotes e manda pros workers. Lotes menores na frente = paralelismo;
+  // no fundo, lotes maiores. O .fmt é gerado antes de pegar o worker: gerá-lo também ocupa um worker,
+  // e lotes esperando por ele com o worker na mão podiam travar todos.
   function schedule(items, low) {
+    var groups = new Map();
+    items.forEach(function (it) {
+      if (!groups.has(it.pre)) groups.set(it.pre, []);
+      groups.get(it.pre).push(it);
+    });
+    groups.forEach(function (group, pre) {
+      scheduleGroup(group, low, ensureFormat(mathHeader(pre)));
+    });
+  }
+
+  function scheduleGroup(items, low, fmtJob) {
     var size = low ? 60 : Math.max(8, Math.ceil(items.length / WORKERS));
     for (var i = 0; i < items.length; i += size) {
       (function (chunk) {
-        withSlot(low, function (slot) {
-          // no fundo, pula o que já ficou pronto enquanto esperava
-          chunk = chunk.filter(function (it) {
-            return !compiling.has(it.key) && !mathCache.has(it.key);
-          });
-          if (!chunk.length) return;
-          chunk.forEach(function (it) {
-            compiling.add(it.key);
-          });
-          return compileBatch(chunk, slot).then(
-            function () {
+        fmtJob.then(function (fmt) {
+          return withSlot(low, function (slot) {
+            // no fundo, pula o que já ficou pronto enquanto esperava
+            chunk = chunk.filter(function (it) {
+              return !compiling.has(it.key) && !mathCache.has(it.key);
+            });
+            if (!chunk.length) return;
+            chunk.forEach(function (it) {
+              compiling.add(it.key);
+            });
+            var done = function () {
               chunk.forEach(function (it) {
                 compiling.delete(it.key);
               });
-            },
-            function () {
-              chunk.forEach(function (it) {
-                compiling.delete(it.key);
-              });
-            }
-          );
+            };
+            return compileBatch(chunk, slot, fmt).then(done, done);
+          });
         });
       })(items.slice(i, i + size));
     }
@@ -414,7 +421,7 @@
     if (!pending.size) return;
     var items = [];
     pending.forEach(function (it, key) {
-      items.push({ key: key, source: it.source, display: it.display });
+      items.push({ key: key, source: it.source, display: it.display, pre: it.pre });
     });
     pending.clear();
     schedule(items, false);
@@ -451,11 +458,12 @@
       })
       .map(function (f) {
         return app.vault.cachedRead(f).then(function (text) {
+          var pre = preambleFor(f.path);
           extractMath(text).forEach(function (m) {
-            var key = mathKey(m.source, m.display);
+            var key = mathKey(m.source, m.display, pre);
             if (seen.has(key) || compiling.has(key) || readMathCache(key)) return;
             seen.add(key);
-            items.push({ key: key, source: m.source, display: m.display });
+            items.push({ key: key, source: m.source, display: m.display, pre: pre });
           });
         });
       });
@@ -472,18 +480,21 @@
     }, 1500);
   }
 
-  function render(source, display) {
+  // sourcePath: caminho da nota no cofre (decide o preâmbulo); sem ele, só o preamble.tex da raiz.
+  function render(source, display, sourcePath) {
     source = source.trim();
     var el = document.createElement(display ? "div" : "span");
     el.className = "mathsidian-math";
     el.dataset.latex = source;
+    el.dataset.display = display ? "1" : "";
+    if (sourcePath) el.dataset.sourcePath = sourcePath;
     if (!source) return el;
-    if (!preambleLoaded && vaultBasePath()) loadPreamble();
+    var pre = preambleFor(sourcePath);
     if (!hasTex) {
-      if (!katexInto(el, source, display)) el.addClass("mathsidian-math-error");
+      if (!katexInto(el, source, display, pre)) el.addClass("mathsidian-math-error");
       return el;
     }
-    var key = mathKey(source, display);
+    var key = mathKey(source, display, pre);
     el.dataset.mathKey = key;
     var cached = readMathCache(key);
     if (cached) {
@@ -491,15 +502,15 @@
       return el;
     }
     el.addClass("is-pending");
-    katexInto(el, source, display);
-    if (!pending.has(key) && !compiling.has(key)) pending.set(key, { source: source, display: display });
+    katexInto(el, source, display, pre);
+    if (!pending.has(key) && !compiling.has(key)) pending.set(key, { source: source, display: display, pre: pre });
     if (!batchTimer) batchTimer = setTimeout(flush, BATCH_DELAY);
     return el;
   }
 
   // ---------- blocos ```latex / ```tikz ----------
 
-  function blockDocument(lang, body) {
+  function blockDocument(lang, body, pre) {
     if (/\\documentclass/.test(body)) return body;
     var isTikz = lang === "tikz";
     if (isTikz && !/\\begin\{(tikzpicture|tikzcd)\}/.test(body))
@@ -510,7 +521,7 @@
       "\\usepackage{pgfplots}",
       "\\pgfplotsset{compat=newest}",
       "\\usetikzlibrary{arrows.meta,calc,positioning,decorations.pathreplacing,patterns,shapes}",
-      preambleSource,
+      pre,
       "\\usepackage[active,tightpage]{preview}",
       "\\begin{document}",
       "\\begin{preview}" + (isTikz ? body : "\\begin{varwidth}{\\linewidth}" + body + "\\end{varwidth}") + "\\end{preview}",
@@ -521,8 +532,7 @@
 
   var blockCache = new Map();
 
-  function compileBlock(lang, body) {
-    var doc = blockDocument(lang, body);
+  function compileBlock(doc) {
     var key = sha1(doc);
     if (blockCache.has(key)) return blockCache.get(key);
     var file = path.join(cacheDir("blocks"), key + ".json");
@@ -547,29 +557,45 @@
     return withKey;
   }
 
+  // Compila o documento do bloco dentro de box. Se o box for recompilado (preâmbulo mudou)
+  // antes de terminar, o resultado antigo é descartado.
+  function fillBlock(box, lang, doc) {
+    var key = sha1(doc);
+    box.dataset.blockKey = key;
+    box.empty();
+    box.removeClass("mathsidian-tex-error");
+    box.addClass("is-pending");
+    box.setText("compilando " + lang + "…");
+    return compileBlock(doc).then(
+      function (res) {
+        if (box.dataset.blockKey !== key) return;
+        box.empty();
+        box.removeClass("is-pending");
+        box.appendChild(svgElement(res.page, res.key));
+      },
+      function (err) {
+        if (box.dataset.blockKey !== key) return;
+        box.empty();
+        box.removeClass("is-pending");
+        box.addClass("mathsidian-tex-error");
+        box.createEl("pre", { text: err.message });
+      }
+    );
+  }
+
   function texBlockProcessor(lang) {
-    return function (source, el) {
+    return function (source, el, ctx) {
       var box = el.createDiv({ cls: "mathsidian-tex is-pending" });
       box.dataset.latex = source;
+      box.dataset.lang = lang;
+      var sourcePath = ctx && ctx.sourcePath;
+      if (sourcePath) box.dataset.sourcePath = sourcePath;
       if (!hasTex) {
         box.addClass("mathsidian-tex-error");
         box.setText("Blocos " + lang + " precisam do app desktop com TeX instalado.");
         return;
       }
-      box.setText("compilando " + lang + "…");
-      return compileBlock(lang, source).then(
-        function (res) {
-          box.empty();
-          box.removeClass("is-pending");
-          box.appendChild(svgElement(res.page, res.key));
-        },
-        function (err) {
-          box.empty();
-          box.removeClass("is-pending");
-          box.addClass("mathsidian-tex-error");
-          box.createEl("pre", { text: err.message });
-        }
-      );
+      return fillBlock(box, lang, blockDocument(lang, source, preambleFor(sourcePath)));
     };
   }
 
@@ -581,11 +607,157 @@
     });
   }
 
-  // ---------- preamble.tex ----------
+  // ---------- preâmbulos ----------
+  // O preâmbulo de uma nota junta, nesta ordem:
+  //   1. o preamble.tex da raiz do cofre (vale pra todas as notas);
+  //   2. o preamble.tex de cada pasta no caminho até a nota (vale pra pasta e subpastas);
+  //   3. a propriedade "preamble" da nota: arquivos .tex (caminho ou nome, com ou sem [[ ]])
+  //      e, por último, o LaTeX direto (qualquer valor com "\").
+  // Uma nota sem pasta nem propriedade fica só com o da raiz, como antes (o cache continua valendo).
+
+  var texFiles = new Map(); // caminho no cofre -> conteúdo ("" se não existe)
+  var usedFiles = new Set(); // arquivos .tex citados na propriedade de alguma nota
+  var notePreamble = new Map(); // nota -> preâmbulo do último uso (pra saber se mudou)
+  var missing = new Set(); // "nota\0valor" de arquivos citados que não existem (avisa uma vez)
+  var macroSets = new Map(); // preâmbulo -> macros do KaTeX
 
   function vaultBasePath() {
     var adapter = window.app && window.app.vault && window.app.vault.adapter;
     return adapter && adapter.basePath ? adapter.basePath : null;
+  }
+
+  function readVaultFile(p) {
+    if (texFiles.has(p)) return texFiles.get(p);
+    var base = vaultBasePath();
+    if (!base || !fs) return ""; // cofre ainda não abriu: não guarda, tenta de novo depois
+    var src = "";
+    try {
+      src = fs.readFileSync(path.join(base, p), "utf8");
+    } catch (e) {}
+    texFiles.set(p, src);
+    return src;
+  }
+
+  // ["preamble.tex", "A/preamble.tex", "A/B/preamble.tex"] pra nota "A/B/nota.md"
+  function folderPreambles(sourcePath) {
+    var dirs = (sourcePath || "").split("/").slice(0, -1);
+    var files = [PREAMBLE_NAME];
+    for (var i = 1; i <= dirs.length; i++) files.push(dirs.slice(0, i).join("/") + "/" + PREAMBLE_NAME);
+    return files;
+  }
+
+  // preamble: [[x.tex]] sem aspas vira lista dentro de lista no YAML: achata tudo.
+  function flatten(v) {
+    if (Array.isArray(v))
+      return v.reduce(function (acc, x) {
+        return acc.concat(flatten(x));
+      }, []);
+    return v == null || v === "" || v === false ? [] : [String(v)];
+  }
+
+  function propertyEntries(sourcePath) {
+    var mc = window.app && window.app.metadataCache;
+    var cache = sourcePath && mc && mc.getCache(sourcePath);
+    var fm = cache && cache.frontmatter;
+    return fm ? flatten(fm[PREAMBLE_PROP]) : [];
+  }
+
+  // "[[Pasta/algebra|apelido]]", "Pasta/algebra.tex", "algebra" -> caminho do .tex no cofre
+  function resolvePreambleFile(entry, sourcePath) {
+    var link = entry.trim().replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+    if (!link) return null;
+    var app = window.app;
+    var names = /\.tex$/i.test(link) ? [link] : [link + ".tex", link];
+    for (var i = 0; i < names.length; i++) {
+      var file = app.vault.getAbstractFileByPath(names[i]) || app.metadataCache.getFirstLinkpathDest(names[i], sourcePath);
+      if (file && file.extension) return file.path;
+    }
+    return null;
+  }
+
+  var INLINE = "\0inline"; // chave do LaTeX direto da nota em `overrides`
+
+  // overrides (opcional, pro editor): Map caminho -> texto ainda não salvo; INLINE -> LaTeX da nota.
+  // Com overrides, só monta o texto: não avisa nem guarda nada.
+  function preambleFor(sourcePath, overrides) {
+    var parts = [];
+    var inline = [];
+    var seen = new Set();
+    var addFile = function (p) {
+      if (seen.has(p)) return;
+      seen.add(p);
+      var src = overrides && overrides.has(p) ? overrides.get(p) : readVaultFile(p);
+      if (src) parts.push(src);
+    };
+    folderPreambles(sourcePath).forEach(addFile);
+    if (sourcePath && window.app && window.app.metadataCache) {
+      propertyEntries(sourcePath).forEach(function (entry) {
+        if (entry.indexOf("\\") >= 0) return inline.push(entry);
+        var p = resolvePreambleFile(entry, sourcePath);
+        if (p) {
+          if (!overrides) usedFiles.add(p);
+          return addFile(p);
+        }
+        if (overrides) return;
+        var id = sourcePath + "\0" + entry;
+        if (missing.has(id)) return;
+        missing.add(id);
+        console.warn("[mathsidian] preâmbulo não encontrado:", entry, "(nota " + sourcePath + ")");
+        toast('Preâmbulo "' + entry + '" não encontrado (nota ' + sourcePath + ")", 4000);
+      });
+    }
+    if (overrides && overrides.has(INLINE)) inline = [overrides.get(INLINE)];
+    inline.forEach(function (src) {
+      if (src) parts.push(src);
+    });
+    var pre = parts.join("\n");
+    if (sourcePath && !overrides) notePreamble.set(sourcePath, pre);
+    return pre;
+  }
+
+  // Pro editor: as camadas do preâmbulo de uma nota, na ordem em que entram.
+  // kind: "vault" | "folder" | "link" (arquivo citado na propriedade) | "inline" (LaTeX na propriedade)
+  function preambleLayers(sourcePath) {
+    var vault = window.app && window.app.vault;
+    var exists = function (p) {
+      return !!(p && vault && vault.getAbstractFileByPath(p));
+    };
+    var layers = folderPreambles(sourcePath).map(function (p, i) {
+      return { kind: i ? "folder" : "vault", path: p, exists: exists(p) };
+    });
+    if (!sourcePath || !window.app || !window.app.metadataCache) return layers;
+    var inline = [];
+    var seen = new Set();
+    propertyEntries(sourcePath).forEach(function (entry) {
+      if (entry.indexOf("\\") >= 0) return inline.push(entry);
+      var p = resolvePreambleFile(entry, sourcePath);
+      if (!p) {
+        // ainda não existe: ao salvar, cria no caminho escrito (relativo à raiz do cofre)
+        p = entry.trim().replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
+        if (!/\.tex$/i.test(p)) p += ".tex";
+      }
+      if (seen.has(p)) return;
+      seen.add(p);
+      layers.push({ kind: "link", path: p, entry: entry, exists: exists(p) });
+    });
+    layers.push({ kind: "inline", path: sourcePath, text: inline.join("\n"), exists: inline.length > 0 });
+    return layers;
+  }
+
+  // Compila o preâmbulo com uma fórmula de teste. Devolve null se compilou, ou a mensagem do TeX.
+  function checkPreamble(pre) {
+    if (!hasTex) return Promise.resolve(null);
+    var doc = mathHeader(pre) + "\n" + mathBody([snippet("x", false)]);
+    return withSlot(false, function (slot) {
+      return compileDocument(doc, slot);
+    }).then(
+      function () {
+        return null;
+      },
+      function (err) {
+        return err.message;
+      }
+    );
   }
 
   // Só as definições entram no KaTeX; \usepackage e afins ficam para o TeX.
@@ -604,74 +776,131 @@
       .replace(/\\(renewcommand|providecommand)/g, "\\newcommand");
   }
 
-  function loadPreamble() {
-    var base = vaultBasePath();
-    var src = "";
-    if (base && fs) {
-      try {
-        src = fs.readFileSync(path.join(base, PREAMBLE_FILE), "utf8");
-      } catch (e) {}
+  // Macros do KaTeX pra um preâmbulo. Uma definição por vez: uma linha com erro não derruba as
+  // outras, e a última definição de um nome vale (a pasta pode redefinir o que veio da raiz).
+  function macrosFor(pre) {
+    if (macroSets.has(pre)) return macroSets.get(pre);
+    var macros = {};
+    if (!window.katex) return macros;
+    macroSets.set(pre, macros);
+    katexDefinitions(pre)
+      .split("\n")
+      .forEach(function (def) {
+        if (!def.trim()) return;
+        var name = def.match(/\\(?:newcommand|def|gdef|let)\*?\s*\{?\s*(\\[A-Za-z@]+)/);
+        if (name) delete macros[name[1]];
+        try {
+          window.katex.renderToString(def, katexOptions(false, macros));
+        } catch (e) {
+          console.warn("[mathsidian] definição do preâmbulo ignorada na prévia:", def, e.message);
+        }
+      });
+    return macros;
+  }
+
+  // Refaz no lugar as fórmulas e blocos já na tela cujo preâmbulo mudou (leitura e edição ao vivo).
+  // onlyPath: só os da nota com esse caminho.
+  function refreshRendered(onlyPath) {
+    var els = document.querySelectorAll(".mathsidian-math[data-math-key]");
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var p = el.dataset.sourcePath || "";
+      if (onlyPath != null && p !== onlyPath) continue;
+      var display = el.dataset.display === "1";
+      if (el.dataset.mathKey === mathKey(el.dataset.latex, display, preambleFor(p))) continue;
+      el.replaceWith(render(el.dataset.latex, display, p));
     }
-    preambleSource = src;
-    preambleLoaded = true;
-    for (var k in macros) delete macros[k];
-    var defs = katexDefinitions(src);
-    if (defs) {
-      try {
-        window.katex.renderToString(defs, katexOptions(false));
-      } catch (e) {
-        console.warn("[mathsidian] erro no " + PREAMBLE_FILE + ":", e.message);
-      }
+    var boxes = document.querySelectorAll(".mathsidian-tex[data-block-key]");
+    for (var j = 0; j < boxes.length; j++) {
+      var box = boxes[j];
+      var bp = box.dataset.sourcePath || "";
+      if (onlyPath != null && bp !== onlyPath) continue;
+      var doc = blockDocument(box.dataset.lang, box.dataset.latex, preambleFor(bp));
+      if (sha1(doc) !== box.dataset.blockKey) fillBlock(box, box.dataset.lang, doc);
     }
   }
 
-  function rerenderAll() {
+  function refresh(onlyPath) {
+    refreshRendered(onlyPath);
     var app = window.app;
     if (!app || !app.workspace) return;
+    // o modo leitura guarda fora da tela seções já renderizadas: refaz a vista toda
     app.workspace.iterateAllLeaves(function (leaf) {
       var view = leaf.view;
+      if (onlyPath != null && !(view && view.file && view.file.path === onlyPath)) return;
       if (view && view.previewMode && view.previewMode.rerender) view.previewMode.rerender(true);
-      if (view && view.editor && view.editor.cm && view.editor.cm.dispatch) view.editor.cm.dispatch({});
     });
+  }
+
+  function reloadPreambles() {
+    texFiles.clear();
+    macroSets.clear();
+    missing.clear();
+    refresh();
+    prewarmVault();
+  }
+
+  function isPreambleFile(p) {
+    return !!p && (p === PREAMBLE_NAME || p.endsWith("/" + PREAMBLE_NAME) || usedFiles.has(p));
   }
 
   function watchPreamble() {
     var app = window.app;
-    if (!app || !app.vault || !app.workspace) return setTimeout(watchPreamble, 500);
+    if (!app || !app.vault || !app.workspace || !app.metadataCache) return setTimeout(watchPreamble, 500);
     app.workspace.onLayoutReady(function () {
-      loadPreamble();
       prewarmVault();
       var editTimers = {};
-      var onChange = function (file) {
-        if (!file) return;
-        if (file.path === PREAMBLE_FILE) {
-          loadPreamble();
-          rerenderAll();
-          prewarmVault();
-        } else if (file.extension === "md") {
-          // nota editada/criada: compila as fórmulas dela no fundo, sem esperar abrir
-          clearTimeout(editTimers[file.path]);
-          editTimers[file.path] = setTimeout(function () {
-            delete editTimers[file.path];
-            prewarmFiles([file]);
-          }, 1200);
-        }
+      var prewarmNote = function (file) {
+        // nota editada/criada: compila as fórmulas dela no fundo, sem esperar abrir
+        clearTimeout(editTimers[file.path]);
+        editTimers[file.path] = setTimeout(function () {
+          delete editTimers[file.path];
+          prewarmFiles([file]);
+        }, 1200);
       };
-      app.vault.on("modify", onChange);
-      app.vault.on("create", onChange);
+      app.vault.on("modify", function (file) {
+        if (!file) return;
+        if (file.extension === "tex" && isPreambleFile(file.path)) reloadPreambles();
+        else if (file.extension === "md") prewarmNote(file);
+      });
+      app.vault.on("create", function (file) {
+        if (!file) return;
+        // um .tex novo pode ser o que alguma nota citava e ainda não existia
+        if (file.extension === "tex" && (isPreambleFile(file.path) || missing.size)) reloadPreambles();
+        else if (file.extension === "md") prewarmNote(file);
+      });
       app.vault.on("delete", function (file) {
-        if (file && file.path === PREAMBLE_FILE) onChange(file);
+        if (file && file.extension === "tex" && isPreambleFile(file.path)) reloadPreambles();
+      });
+      app.vault.on("rename", function (file, oldPath) {
+        if (!file) return;
+        if (file.extension === "tex") {
+          if (isPreambleFile(oldPath) || isPreambleFile(file.path) || missing.size) reloadPreambles();
+        } else if (file.extension === "md") {
+          // nota mudou de pasta: pode mudar o preâmbulo
+          var els = document.querySelectorAll("[data-source-path]");
+          for (var i = 0; i < els.length; i++) if (els[i].dataset.sourcePath === oldPath) els[i].dataset.sourcePath = file.path;
+          notePreamble.delete(oldPath);
+          refresh(file.path);
+          prewarmNote(file);
+        }
+      });
+      // propriedade "preamble" mudou: refaz a nota (o preâmbulo só é relido quando o cache da nota muda)
+      app.metadataCache.on("changed", function (file) {
+        if (!file || file.extension !== "md" || !notePreamble.has(file.path)) return;
+        var before = notePreamble.get(file.path);
+        if (preambleFor(file.path) !== before) refresh(file.path);
       });
     });
   }
 
   // ---------- Alt+clique copia o LaTeX ----------
 
-  function toast(text) {
+  function toast(text, ms) {
     var el = document.body.createDiv({ cls: "mathsidian-toast", text: text });
     setTimeout(function () {
       el.detach();
-    }, 1400);
+    }, ms || 1400);
   }
 
   document.addEventListener(
@@ -692,10 +921,14 @@
   window.MathsidianMath = {
     render: render,
     install: install,
-    reloadPreamble: function () {
-      loadPreamble();
-      rerenderAll();
-    },
+    reloadPreamble: reloadPreambles,
+    preambleFor: preambleFor,
+    preambleLayers: preambleLayers,
+    checkPreamble: checkPreamble,
+    INLINE: INLINE,
+    PREAMBLE_NAME: PREAMBLE_NAME,
+    PREAMBLE_PROP: PREAMBLE_PROP,
+    hasTex: hasTex,
   };
 
   if (hasTex) watchPreamble();

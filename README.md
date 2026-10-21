@@ -140,12 +140,35 @@ Os nomes em inglês também funcionam: `theorem`, `definition`, `lemma`, `coroll
 
 ## 5. Seus próprios comandos (preamble.tex)
 
-Se você usa atalhos como `\R` para ℝ, crie um arquivo chamado **`preamble.tex`** na pasta principal do cofre. Tudo o que estiver nele vale para todas as fórmulas de todas as notas.
+Se você usa atalhos como `\R` para ℝ, escreva as definições num arquivo chamado **`preamble.tex`**. O lugar onde o arquivo fica decide para quais notas ele vale:
+
+| Onde fica | Vale para |
+|---|---|
+| `preamble.tex` na pasta principal do cofre | todas as notas |
+| `preamble.tex` dentro de uma pasta | as notas dessa pasta e das subpastas dela |
+| propriedade `preamble` no topo de uma nota | só aquela nota |
+
+Eles se somam nessa ordem: primeiro o do cofre, depois o de cada pasta no caminho até a nota, por último o da nota. Valem para as fórmulas e para os blocos `tikz` e `latex`.
+
+### O jeito fácil: a janela de preâmbulos
+
+Clique no ícone **Σ** da barra lateral esquerda, ou aperte `Ctrl + P` e procure **"Editar preâmbulos"**. Abre uma janela flutuante:
+
+- **Abas:** mostram os preâmbulos que valem para a nota aberta, na ordem em que entram: **Cofre**, cada pasta, os arquivos citados e **Esta nota**. Ao abrir outra nota, as abas mudam junto.
+- **Aba apagada, com borda tracejada:** esse preâmbulo ainda não existe. Escreva e salve para criar o arquivo.
+- **Salvar:** clique em **Salvar** ou aperte `Ctrl + S`. Depois de salvar, o LaTeX confere se o preâmbulo compila e mostra o erro, se houver.
+- **Verificar:** confere sem salvar.
+- **Outros arquivos:** abre qualquer outro `.tex` do cofre.
+- **Mover e redimensionar:** arraste pelo título e puxe o canto inferior direito. A janela lembra a posição.
+
+O que você não salvou fica marcado com **●** na aba, e não se perde ao trocar de aba ou de nota.
+
+### Criar um preamble.tex pelo Explorer
 
 1. No Windows Explorer, ative a exibição das extensões dos arquivos:
    - **Windows 11:** "Exibir" → "Mostrar" → "Extensões de nomes de arquivos".
    - **Windows 10:** aba "Exibir" → marque "Extensões de nomes de arquivos".
-2. Abra a pasta do cofre. No Mathsidian, clique com o botão direito numa nota e escolha "Mostrar no explorador de arquivos".
+2. Abra a pasta do cofre, ou a pasta onde as regras devem valer. No Mathsidian, clique com o botão direito numa nota e escolha "Mostrar no explorador de arquivos".
 3. Clique com o botão direito num espaço vazio → **"Novo" → "Documento de Texto"**.
 4. Renomeie o arquivo para `preamble.tex`. Ele não pode se chamar `preamble.tex.txt`. Confirme o aviso de mudança de extensão.
 5. Abra o arquivo com o Bloco de Notas, escreva suas definições e salve. Exemplo:
@@ -156,7 +179,32 @@ Se você usa atalhos como `\R` para ℝ, crie um arquivo chamado **`preamble.tex
 
 Assim que você salva, as notas abertas se atualizam sozinhas.
 
-⚠️ **Não defina o mesmo comando duas vezes** e não use `\newcommand` para nomes que já existem no LaTeX, como `\Re` ou `\det`. Isso faz **todas** as fórmulas ficarem vermelhas. Se acontecer, apague a última linha que você adicionou.
+### Preâmbulo de uma nota só
+
+No topo da nota, escreva a propriedade `preamble` com o nome de um arquivo `.tex` do cofre. Ele pode estar em qualquer pasta:
+
+    ---
+    preamble: "[[topologia]]"
+    ---
+
+Para usar mais de um arquivo, faça uma lista:
+
+    ---
+    preamble:
+      - "[[topologia]]"
+      - "[[Cursos/medida.tex]]"
+    ---
+
+Também dá para escrever o LaTeX direto na nota. Use a barra `|` e recue as linhas com dois espaços:
+
+    ---
+    preamble: |
+      \newcommand{\Z}{\mathbb{Z}}
+    ---
+
+Se o arquivo citado não existir, aparece um aviso no canto da tela. Mudar a propriedade, mover a nota de pasta ou salvar um dos arquivos atualiza as fórmulas na hora.
+
+⚠️ **Não defina o mesmo comando duas vezes** e não use `\newcommand` para nomes que já existem no LaTeX, como `\Re` ou `\det`. Isso faz **todas** as fórmulas das notas afetadas ficarem vermelhas. Se acontecer, apague a última linha que você adicionou. Para trocar, numa pasta ou nota, um comando que já vem do cofre, use `\renewcommand` no lugar de `\newcommand`.
 
 ## 6. Trazer um arquivo LaTeX (.tex) para o Mathsidian
 
@@ -233,16 +281,23 @@ O MathJax foi removido. Toda fórmula `$...$` / `$$...$$` é compilada pelo TeX 
 
 - **Compilação:**
   - as fórmulas são compiladas em lotes por 3 workers em paralelo;
-  - o cabeçalho (pacotes + `preamble.tex`) vira um `.fmt` pré-compilado;
+  - o cabeçalho (pacotes + preâmbulo da nota) vira um `.fmt` pré-compilado, um para cada preâmbulo diferente;
   - um lote com erro é dividido ao meio até isolar a fórmula culpada.
 - **Cache:** fica em `%APPDATA%\Mathsidian\latex-cache`. As fórmulas do cofre são pré-compiladas em segundo plano ao abrir o app e ao salvar uma nota.
 - **Prévia:** o KaTeX mostra uma prévia enquanto o TeX compila. No Quick Look (prévia do Explorer) não há TeX, então lá a saída final é o KaTeX.
-- **`preamble.tex` na raiz do cofre:** entra em todo documento. As definições (`\newcommand`, `\DeclareMathOperator`...) também valem no KaTeX. Ao salvar o arquivo, tudo é re-renderizado.
+- **Preâmbulo em cascata:** o preâmbulo de uma nota junta o `preamble.tex` da raiz, o `preamble.tex` de cada pasta até a nota e a propriedade `preamble` dela (arquivos `.tex` ou LaTeX direto). As definições (`\newcommand`, `\DeclareMathOperator`...) também valem no KaTeX. O `app.js` repassa o caminho da nota para `render()` no modo leitura e na edição ao vivo. Ao salvar um desses arquivos, mudar a propriedade ou mover a nota, as fórmulas na tela são refeitas no lugar.
 - **Blocos de código:**
   - `tikz` recebe o corpo de um `tikzpicture`, com `pgfplots` e as bibliotecas `arrows.meta`, `calc`, `positioning`, `decorations.pathreplacing`, `patterns` e `shapes`;
   - `latex` recebe qualquer trecho, ou um documento inteiro com `\documentclass`.
 - **Callouts de teoria:** os estilos ficam em `math.css`.
 - **API de plugins:** `loadMathJax()` continua existindo só por compatibilidade e não carrega nada.
+
+### Editor de preâmbulos (`fonte-nucleo/lib/mathsidian-math/preamble-editor.js`)
+
+- Comando `mathsidian:edit-preambles` e ícone Σ na barra lateral abrem e fecham a janela flutuante.
+- As abas vêm de `MathsidianMath.preambleLayers()`. O botão Verificar monta o preâmbulo com os rascunhos via `preambleFor(nota, overrides)` e compila com `checkPreamble()`.
+- O LaTeX da nota é gravado com `processFrontMatter`, mantendo os arquivos citados na propriedade.
+- O app engole o `Ctrl + S` na fase de captura da janela. Por isso o script registra o próprio ouvinte antes do `app.js` carregar.
 
 ### Importar LaTeX (`fonte-nucleo/lib/mathsidian-math/import.js`)
 

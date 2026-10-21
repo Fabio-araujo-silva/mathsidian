@@ -103665,8 +103665,8 @@
       function uj() {
         return Promise.resolve();
       }
-      function hj(e, t) {
-        return window.MathsidianMath.render(e, t);
+      function hj(e, t, n) {
+        return window.MathsidianMath.render(e, t, n);
       }
       var pj = null,
         dj = 0,
@@ -105326,7 +105326,7 @@
       });
       var zj = xO();
       window.MathsidianMath.install(Lj);
-      Lj.registerPostProcessor(function (e) {
+      Lj.registerPostProcessor(function (e, mathCtx) {
         var t = e.findAll(".math:not(.is-loaded)");
         if (0 !== t.length)
           return cj.then(function () {
@@ -105335,7 +105335,7 @@
                 r = Vb(i.innerHTML);
               i.empty();
               try {
-                var o = hj(r, i.classList.contains("math-block"));
+                var o = hj(r, i.classList.contains("math-block"), mathCtx && mathCtx.sourcePath);
                 i.appendChild(o);
               } catch (e) {
                 i.appendText(r);
@@ -157705,6 +157705,9 @@
             }),
             (t.prototype.initDOM = function (e) {
               var t = (this.containerEl = createEl(this.block ? "div" : "span", "math"));
+              // Mathsidian: caminho da nota, que decide o preâmbulo (pasta/propriedade)
+              var mathInfo = e && e.state ? e.state.field(W1, !1) : null;
+              this.sourcePath = mathInfo && mathInfo.file ? mathInfo.file.path : null;
               return (
                 this.block && (t.createEl("br"), t.createEl("br"), this.addEditButton(e, t)),
                 this.hookClickHandler(e, t),
@@ -157721,7 +157724,7 @@
                   r = n.block;
                 e.toggleClass("math-block", r), e.toggleClass("cm-embed-block", r), e.empty();
                 try {
-                  var o = hj(i, r);
+                  var o = hj(i, r, n.sourcePath);
                   e.appendChild(o);
                 } catch (t) {
                   e.appendText(i);
